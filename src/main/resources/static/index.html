@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shelfly App - Versão de Teste</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Fundo mais suave */
+        }
+        .card {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        /* Estilização para as Imagens (Opcional, mas útil) */
+        .screenshot-img {
+            transition: transform 0.3s ease-in-out;
+            border: 3px solid #ffffff; /* Borda branca para simular tela */
+        }
+        .screenshot-img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div class="card w-full max-w-4xl bg-white rounded-2xl p-8 md:p-12 text-center border-t-8 border-indigo-700">
+        
+        <div class="mb-8">
+            <svg class="w-16 h-16 text-indigo-700 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.409 9.208 5 7.5 5S4.168 5.409 3 6.253v13C4.168 18.409 5.792 18 7.5 18s3.332.409 4.5 1.253m0-13C13.168 5.409 14.792 5 16.5 5S19.832 5.409 21 6.253v13C19.832 18.409 18.208 18 16.5 18s-3.332.409-4.5 1.253"></path>
+            </svg>
+            <p class="text-indigo-600 font-semibold mt-2">Shelfly - App Mobile</p>
+            <p class="text-gray-500 mt-4 max-w-2xl mx-auto">
+                Guarde sua leitura em um app digital, organize seus livros e se mantenha focado em sua leitura!
+            </p>
+        </div>
+
+
+      📱 Pré-visualização do Aplicativo
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <img src="imagens/Tela inicial.png" alt="Screenshot 1: Tela Inicial" class="screenshot-img w-full h-auto rounded-lg shadow-xl object-cover">
+            <img src="imagens/lista de livros.png" alt="Screenshot 2: Lista de Livros" class="screenshot-img w-full h-auto rounded-lg shadow-xl object-cover">
+            <img src="imagens/Perfil shelfly.png" alt="Screenshot 3: Perfil do Usuário" class="screenshot-img w-full h-auto rounded-lg shadow-xl object-cover">
+            <img src="imagens/tela de login.png" alt="Screenshot 4: Tela de login" class="screenshot-img w-full h-auto rounded-lg shadow-xl object-cover">
+        </div>
+
+        <section id="sobre" class="section-padding mb-10">
+            <div class="container">
+                <h2>Sobre o Projeto</h2>
+                <p>O Shelfly é um aplicativo projetado para ajudar as pessoas que tem a rotina de ler livros, seu principal propósito é auxiliar o usuário a manter um ritmo de leitura de seus livros, ter um histórico de leitura e gerenciamento dos livros. </p>
+                <p>Desenvolvido com React Native e Expo, o Shelfly lhe oferece uma experiência para gerenciar sua leitura diária em apenas um aplicativo.</p>
+            </div>
+        </section>
+        
+        ⬇️ Baixar e Instalar
+
+        <div class="flex flex-col md:flex-row items-center justify-center gap-8 bg-indigo-50 p-6 rounded-xl border border-indigo-200 mb-8">
+            
+            <div class="text-center">
+                <p class="text-gray-700 font-semibold mb-2">Escaneie com a câmera do seu celular:</p>
+                <div class="p-4 bg-white rounded-lg inline-block border border-gray-300">
+                    <img src="imagens/shelflyback.png" alt="QR Code para Download do Shelfly APK" class="w-32 h-32 mx-auto">
+                </div>
+            </div>
+
+            <div class="hidden md:block h-24 w-px bg-indigo-300"></div> <div class="md:hidden w-3/4 h-px bg-indigo-300 my-4"></div> <div class="flex-grow text-center md:text-left">
+                <p class="text-gray-700 font-semibold mb-3 text-lg">Download Direto:</p>
+                <a href="/download/shelflybackend.apk" 
+                    download="Shelfly_vTest.apk"
+                    class="inline-block py-3 px-10 bg-indigo-600 text-white font-bold rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                    BAIXAR APK
+                </a>
+            </div>
+        </div>
+
+        <div class="text-left bg-gray-100 p-5 rounded-xl border border-gray-300">
+            <h3 class="font-bold text-gray-700 mb-3 flex items-center text-xl">
+                <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Passos para Instalação Segura
+            </h3>
+            <ol class="list-decimal list-inside text-base text-gray-600 space-y-3 ml-2">
+                <li>Clique no botão **BAIXAR APK** ou escaneie o **QR Code** acima.</li>
+                <li>O navegador irá baixar o arquivo</li>
+                <li>Pode aparecer um aviso como: "Este tipo de arquivo pode danificar seu dispositivo. Quer manter mesmo assim?" Toque em OK ou Manter.</li>
+                <li>Após manter o arquivo, apenas clique nele e instale para ter a experiência de utilizar o shelfly</li>
+            </ol>
+        </div>
+
+    </div>
+
+</body>
+</html>
