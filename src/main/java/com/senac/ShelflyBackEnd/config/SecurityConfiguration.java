@@ -27,6 +27,8 @@ public class SecurityConfiguration {
     // --- ENDPOINTS PÚBLICOS ---
     public static final String [] ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED = {
             "/h2-console",
+            "/",
+            "/index.html",
             // 🔓 Swagger/OpenAPI UI
             "/v3/api-docs/**",
             "/swagger-ui/**",
