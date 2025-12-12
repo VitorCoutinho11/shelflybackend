@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @CrossOrigin("*")
 public class WebController {
 
-        @GetMapping("/")
+        @GetMapping("/home")
         public String home() {
             return "forward:/index.html";
         }

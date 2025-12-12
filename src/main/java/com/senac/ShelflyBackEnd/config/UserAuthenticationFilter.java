@@ -8,7 +8,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-// 💡 Removido o import de org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,40 +15,112 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Component
 public class UserAuthenticationFilter extends OncePerRequestFilter {
 
-    // 💡 Campos definidos como 'final'
     private final JwtTokenService jwtTokenService;
     private final UsuarioRepository usuarioRoleRepository;
 
-    // 💡 Construtor para Injeção de Dependência (substitui @Autowired nos campos)
+    // CHAVE SECRETA: DEVE SER A MESMA USADA NO JwtTokenService
+    private static final String SECRET_KEY = "4Z^XrroxR@dWxqf$mTTKwW$!@#qGr4P";
+    private static final String ISSUER = "pizzurg-api";
+
     public UserAuthenticationFilter(JwtTokenService jwtTokenService, UsuarioRepository usuarioRoleRepository) {
         this.jwtTokenService = jwtTokenService;
         this.usuarioRoleRepository = usuarioRoleRepository;
     }
 
+    // 🚨 MODIFICAÇÃO CRUCIAL: Este método define quais rotas o filtro JWT deve IGNORAR.
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        // 1. OPTIONS SEMPRE liberado (Preflight CORS)
+        if (request.getMethod().equals(HttpMethod.OPTIONS.name())) {
+            return true;
+        }
+
+        // 2. ROTAS PÚBLICAS: Verificamos com e sem o prefixo de contexto (/shelfly)
+        String[] publicPaths = {
+                "/shelfly/users/login",   // Login COM prefixo (CRUCIAL)
+                "/shelfly/users",         // Cadastro COM prefixo
+                "/users/login",           // Login SEM prefixo (Backup)
+                "/users",                 // Cadastro SEM prefixo (Backup)
+                "/h2-console",
+                "/v3/api-docs",
+                "/swagger-ui"
+        };
+
+        for (String publicPath : publicPaths) {
+            // Se o path for exatamente igual OU começar com o path (para cobrir sub-recursos do Swagger/H2)
+            if (path.equals(publicPath) || path.startsWith(publicPath + "/")) {
+                return true;
+            }
+        }
+
+        // Se não for nenhuma rota pública, o filtro DEVE ser executado
+        return false;
+    }
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // 1. Sempre recupera o token, se existir
+        // Este bloco só será executado se shouldNotFilter retornar FALSE.
+
         String token = recoveryToken(request);
 
         // 2. Se o token existir, tenta autenticar
         if (token != null) {
-            String subject = jwtTokenService.getSubjectFromToken(token);
 
-            // Garante que o usuário existe antes de autenticar
-            if (usuarioRoleRepository.findByEmail(subject).isPresent()) {
-                Usuario usuarioRole = usuarioRoleRepository.findByEmail(subject).get();
-                UsuarioDetailsImpl usuarioDetails = new UsuarioDetailsImpl(usuarioRole);
+            try {
+                Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
 
-                Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(usuarioDetails.getUsername(), null, usuarioDetails.getAuthorities());
+                // 1. Verifica e Obtém o Assunto (E-mail)
+                String subject = JWT.require(algorithm)
+                        .withIssuer(ISSUER)
+                        .build()
+                        .verify(token)
+                        .getSubject();
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                // 2. EXTRAIR AS ROLES DO PAYLOAD
+                List<String> rolesFromToken = JWT.require(algorithm)
+                        .withIssuer(ISSUER)
+                        .build()
+                        .verify(token)
+                        .getClaim("roles") // <<<<< LENDO A CLAIM 'roles'
+                        .asList(String.class);
+
+
+                // 3. Autentica se o usuário e as roles forem válidos
+                if (usuarioRoleRepository.findByEmail(subject).isPresent() && rolesFromToken != null) {
+
+                    // Mapeia as Strings das Roles (Ex: "ROLE_ADMIN") para objetos GrantedAuthority
+                    List<GrantedAuthority> authorities = rolesFromToken.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList());
+
+                    // Cria o objeto de autenticação com as autoridades
+                    Authentication authentication =
+                            new UsernamePasswordAuthenticationToken(subject, null, authorities);
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+
+            } catch (JWTVerificationException exception){
+                // Se o token for inválido/expirado, o Spring Security bloqueará a requisição mais adiante.
+                System.out.println("Token inválido ou expirado. Requisição não autenticada no contexto.");
             }
         }
 
@@ -63,24 +134,5 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
             return authorizationHeader.replace("Bearer ", "");
         }
         return null;
-    }
-
-    // 🛑 ATENÇÃO: Este método (checkIfEndpointIsNotPublic) NÃO É USADO na lógica do doFilterInternal acima.
-    // Ele é redundante se você estiver configurando as rotas públicas no SecurityConfiguration.
-    // Se você não usá-lo, pode removê-lo.
-    private boolean checkIfEndpointIsNotPublic(HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
-        String requestMethod = request.getMethod();
-
-        if (requestMethod.equals(HttpMethod.POST.name()) && requestURI.endsWith("/api/usuario/login")) {
-            return false;
-        }
-
-        if (requestMethod.equals(HttpMethod.OPTIONS.name())) {
-            return false;
-        }
-
-        return Arrays.stream(SecurityConfiguration.ENDPOINTS_WITH_AUTHENTICATION_NOT_REQUIRED)
-                .noneMatch(publicEndpoint -> requestURI.contains(publicEndpoint));
     }
 }
