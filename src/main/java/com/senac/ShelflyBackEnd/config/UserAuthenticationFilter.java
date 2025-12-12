@@ -46,24 +46,29 @@ public class UserAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
 
-        // 1. OPTIONS SEMPRE liberado (Preflight CORS)
+        // 1. OPTIONS SEMPRE liberado
         if (request.getMethod().equals(HttpMethod.OPTIONS.name())) {
             return true;
         }
 
-        // 2. ROTAS PÚBLICAS: Verificamos com e sem o prefixo de contexto (/shelfly)
+        // 2. ROTAS PÚBLICAS: Incluir a rota de Gêneros aqui
         String[] publicPaths = {
-                "/shelfly/users/login",   // Login COM prefixo (CRUCIAL)
-                "/shelfly/users",         // Cadastro COM prefixo
-                "/users/login",           // Login SEM prefixo (Backup)
-                "/users",                 // Cadastro SEM prefixo (Backup)
+                // Rotas de Usuário (Login/Cadastro)
+                "/shelfly/users/login",
+                "/shelfly/users",
+                "/users/login",
+                "/users",
+
+                // Rotas de Sistema
                 "/h2-console",
                 "/v3/api-docs",
-                "/swagger-ui"
+                "/swagger-ui",
+
+                "/api/genero/listar",
+                "/shelfly/api/genero/listar"
         };
 
         for (String publicPath : publicPaths) {
-            // Se o path for exatamente igual OU começar com o path (para cobrir sub-recursos do Swagger/H2)
             if (path.equals(publicPath) || path.startsWith(publicPath + "/")) {
                 return true;
             }

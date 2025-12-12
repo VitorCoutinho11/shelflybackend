@@ -12,7 +12,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -32,17 +31,8 @@ public class SecurityConfiguration {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/users" // GET para listagem/informação pública de usuários (se existir)
+            "/users"
     };
-
-    // --- ENDPOINTS COM ACESSO RESTRITO POR ROLE ---
-    // Manter a ordem aqui é menos crítico do que no 'authorizeHttpRequests'
-    public static final String [] ENDPOINTS_USUARIO_LEVEL = {
-            "/api/avaliacao/**",
-            "/api/livro/**",
-            "/api/marcacao/**",
-    };
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -59,30 +49,47 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         // 1. PRIORIDADE MÁXIMA: OPTIONS (CORS Pre-flight) e H2
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll() // CRÍTICO: Libera H2 completo
+                        .requestMatchers("/h2-console/**").permitAll()
 
                         // 2. PRIORIDADE ALTA: ROTAS PÚBLICAS DE AUTENTICAÇÃO (POST)
-                        // Garante que o Login/Cadastro sejam liberados antes de tudo
                         .requestMatchers(HttpMethod.POST, "/users/login", "/users").permitAll()
 
                         // 3. OUTRAS ROTAS PÚBLICAS (GETs/Swagger)
                         .requestMatchers(ENDPOINTS_PUBLIC_GET).permitAll()
 
-                        // 4. ADMIN LEVEL: Rotas restritas ao ADMIN (Mais ampla)
-                        // Usa hasRole para que o Spring adicione o prefixo ROLE_
+                        // ⭐️ CORREÇÃO FINAL GÊNEROS: MOVE OS GETS PÚBLICOS PARA CIMA
+                        // Libera GET para Gêneros e Livros (Acesso anônimo a dados de catálogo)
+                        .requestMatchers(HttpMethod.GET, "/api/genero/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/livro", "/api/livro/**").permitAll()
+
+                        // 4. ADMIN LEVEL: Rotas restritas ao ADMIN
                         .requestMatchers("/admin/**").hasRole(ROLE_ADMIN)
 
-                        // 5. USUARIO LEVEL: Rotas restritas ao USUARIO
-                        // Usa hasRole. O ADMIN já pode ter acesso implícito ou explícito aqui dependendo da sua arquitetura.
-                        .requestMatchers(ENDPOINTS_USUARIO_LEVEL).hasRole(ROLE_USUARIO)
+                        // ----------------------------------------------------
+                        // 5. CORREÇÃO DE GRANULARIDADE (USUARIO LEVEL)
+                        // ----------------------------------------------------
 
-                        // 6. BLOQUEIO PADRÃO: Qualquer outra requisição deve ser autenticada (Token válido)
-                        // Apenas exige um token válido, sem checar a role específica
+                        // ** REGRAS DE GÊNEROS (Criação/Atualização/Exclusão) **
+                        .requestMatchers(HttpMethod.POST, "/api/genero/criar").hasRole(ROLE_USUARIO)
+                        .requestMatchers(HttpMethod.PUT, "/api/genero/atualizar/**").hasRole(ROLE_USUARIO)
+                        .requestMatchers(HttpMethod.DELETE, "/api/genero/apagar/**").hasRole(ROLE_USUARIO)
+
+                        // Rotas de Livro: Apenas a criação/atualização/deleção exigem USUARIO
+                        .requestMatchers(HttpMethod.POST, "/api/livro/**").hasRole(ROLE_USUARIO) // CRIAÇÃO
+                        .requestMatchers(HttpMethod.PUT, "/api/livro/**").hasRole(ROLE_USUARIO) // ATUALIZAÇÃO
+                        .requestMatchers(HttpMethod.DELETE, "/api/livro/**").hasRole(ROLE_USUARIO) // EXCLUSÃO
+
+                        // Rotas de Avaliação e Marcação: TUDO exige USUARIO (ajuste se a regra for diferente)
+                        .requestMatchers("/api/avaliacao/**").hasRole(ROLE_USUARIO)
+                        .requestMatchers("/api/marcacao/**").hasRole(ROLE_USUARIO)
+
+
+                        // 6. BLOQUEIO PADRÃO: Qualquer outra requisição DEVE ser autenticada (token válido)
                         .anyRequest().authenticated()
                 )
 
                 // 7. Adiciona o filtro JWT antes do tratamento de requisição
-                .addFilterBefore(userAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // <-- MELHOR LOCAL
+                .addFilterBefore(userAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
